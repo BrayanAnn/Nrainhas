@@ -21,7 +21,7 @@ for position in positions:
 
   dict(zip(["a","b","c","d"], range(4)))
 
-  #gerando uma instancia do solver (DPLL)
+#gerando uma instancia do solver (DPLL)
 g = Glucose3()
 
 #cada linha possui PELO MENOS UMA rainha
@@ -40,22 +40,38 @@ for j in range(1,N+1):
     other_indexes = list(range(1,N+1))
     other_indexes.remove(i)
     for other in other_indexes:
-      #Q_i_j -> ~Q_k_j === ~Q_i_j v ~Q_k_j
       clause = [-mapping_to_int[f"Q{i}_{j}"], -mapping_to_int[f"Q{other}_{j}"]]
       g.add_clause(clause)
 
-#diagonais primarias
-for diff in range(-N+2, N):
-    diagonal = [[i, j] for i in range(1, N+1) for j in range(1, N+1) if i-j == diff]
-    indexes = [mapping_to_int[f"Q{pos[i]}_{pos[j]}"] for pos in diagonal]
-    g.add_atmost(indexes, 1)
+############## ATÉ AQUI CODIGO DO PROFESSOR ###################
 
-#diagonais secundárias
-for sum_val in range(3, 2*N+1):
-    diagonal = [[i, j] for i in range(1, N+1) for j in range(1, N+1) if i+j == sum_val]
-    indexes = [mapping_to_int[f"Q{pos[i]}_{pos[j]}"] for pos in diagonal]
-    g.add_atmost(indexes, 1)
+#DIAGONAL PRINCIPAL
+for i in range(1, N+1):
+    for j in range(1, N+1):
+        for k in range(1, N):
+            if i + k <= N and j + k <= N:
+                clause = [-mapping_to_int[f"Q{i}_{j}"], -mapping_to_int[f"Q{i + k}_{j + k}"]]
+                g.add_clause(clause)# Adiciona ao solver a soma de ambos os indexes + k
+            if i - k >= 1 and j - k >= 1:
+                clause = [-mapping_to_int[f"Q{i}_{j}"], -mapping_to_int[f"Q{i - k}_{j - k}"]]
+                g.add_clause(clause)# Adiciona ao solver a diferença de ambos os indexes - k
 
-#sugestao
-#implementar que cada diagonal (primaria ou secundaria)
-#possui NO MAXIMO UMA RAINHA
+#DIAGONAL SECUNDÁRIA
+for i in range(1, N+1):
+    for j in range(1, N+1):
+        for k in range(1, N):
+            if i + k <= N and j - k >= 1:
+                clause = [-mapping_to_int[f"Q{i}_{j}"], -mapping_to_int[f"Q{i + k}_{j - k}"]]
+                g.add_clause(clause)# Adiciona ao solver ao X da matriz Index I + K e ao Y da matriz Index J - K
+            if i - k >= 1 and j + k <= N:
+                clause = [-mapping_to_int[f"Q{i}_{j}"], -mapping_to_int[f"Q{i - k}_{j + k}"]]
+                g.add_clause(clause)# Adiciona ao solver ao X da matriz Index I - K e ao Y da matriz Index J + K
+
+if g.solve():
+    lista_rainhas = [mapping_to_int_inv[index] for index in g.get_model() if index > 0]
+    print("Solução:")
+    for rainha in lista_rainhas:
+        print("Posição da rainha: {}".format(rainha))
+else:
+    print("Sem Solução possível")
+
